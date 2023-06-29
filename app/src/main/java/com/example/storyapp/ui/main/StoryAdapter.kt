@@ -6,28 +6,27 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.core.app.ActivityOptionsCompat
 import androidx.core.util.Pair
+import androidx.paging.PagingDataAdapter
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.storyapp.databinding.ItemStoryBinding
 import com.example.storyapp.data.model.Story
+import com.example.storyapp.util.DateFormatter
+import java.util.TimeZone
 
-class StoryAdapter: RecyclerView.Adapter<StoryAdapter.StoryViewHolder>() {
-    private val storyData = ArrayList<Story>()
-
-    fun setData(stories: ArrayList<Story>) {
-        storyData.clear()
-        storyData.addAll(stories)
-        notifyDataSetChanged()
-    }
+class StoryAdapter: PagingDataAdapter<Story, StoryAdapter.StoryViewHolder>(DIFF_CALLBACK) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = StoryViewHolder(
         ItemStoryBinding.inflate(LayoutInflater.from(parent.context), parent, false)
     )
 
-    override fun onBindViewHolder(holder: StoryViewHolder, position: Int) =
-        holder.bind(storyData[position])
-
-    override fun getItemCount() = storyData.size
+    override fun onBindViewHolder(holder: StoryViewHolder, position: Int) {
+        val data = getItem(position)
+        if (data != null){
+            holder.bind(data)
+        }
+    }
 
     inner class StoryViewHolder(private val binding: ItemStoryBinding) :
         RecyclerView.ViewHolder(binding.root) {
@@ -37,8 +36,7 @@ class StoryAdapter: RecyclerView.Adapter<StoryAdapter.StoryViewHolder>() {
                     .load(story.photoUrl)
                     .into(binding.ivItemPhoto)
                 tvItemName.text = story.name
-                tvId.text = story.id
-                tvDate.text = story.createdAt
+                tvDate.text = DateFormatter.formatDate(story.createdAt, TimeZone.getDefault().id)
             }
             itemView.setOnClickListener {
                 val intent = Intent(itemView.context, DetailStoryActivity::class.java).apply {
@@ -49,10 +47,21 @@ class StoryAdapter: RecyclerView.Adapter<StoryAdapter.StoryViewHolder>() {
                         itemView.context as Activity,
                         Pair(binding.ivItemPhoto, "image"),
                         Pair(binding.tvItemName, "name"),
-                        Pair(binding.tvId, "userId"),
                         Pair(binding.tvDate, "createdAt"),
                     )
                 it.context.startActivity(intent, optionsCompat.toBundle())
+            }
+        }
+    }
+
+    companion object {
+        val DIFF_CALLBACK = object : DiffUtil.ItemCallback<Story>() {
+            override fun areItemsTheSame(oldItem: Story, newItem: Story): Boolean {
+                return oldItem == newItem
+            }
+
+            override fun areContentsTheSame(oldItem: Story, newItem: Story): Boolean {
+                return oldItem.id == newItem.id
             }
         }
     }

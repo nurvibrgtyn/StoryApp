@@ -1,36 +1,26 @@
 package com.example.storyapp.ui.main
 
-import android.content.Context
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.Settings
 import android.view.Menu
 import android.view.MenuItem
-import android.view.View
-import android.widget.Toast
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.preferencesDataStore
+import androidx.core.view.isVisible
 import androidx.lifecycle.ViewModelProvider
 import com.example.storyapp.R
 import com.example.storyapp.databinding.ActivityMainBinding
-import com.example.storyapp.data.Resource
-import com.example.storyapp.data.preferences.UserPreferences
+import com.example.storyapp.ui.maps.MapsActivity
 import com.example.storyapp.ui.user.LoginActivity
-import com.example.storyapp.ui.user.LoginViewModel
+import com.example.storyapp.ui.user.UserViewModel
 import com.example.storyapp.util.ViewModelFactory
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
-    private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "token")
     private lateinit var binding: ActivityMainBinding
     private lateinit var storyAdapter: StoryAdapter
     private lateinit var mainViewModel: MainViewModel
-    private lateinit var loginViewModel: LoginViewModel
+    private lateinit var userViewModel: UserViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,9 +54,12 @@ class MainActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.action_logout -> {
-                loginViewModel.logout()
+                userViewModel.logout()
                 startActivity(Intent(this, LoginActivity::class.java))
                 finishAffinity()
+            }
+            R.id.action_maps -> {
+                startActivity(Intent(this, MapsActivity::class.java))
             }
         }
         return super.onOptionsItemSelected(item)
@@ -75,23 +68,9 @@ class MainActivity : AppCompatActivity() {
     private fun setupView() {
         storyAdapter = StoryAdapter()
 
-        loginViewModel.getUserToken().observe(this){ token ->
-            if (token.isNotEmpty()){
-                mainViewModel.stories.observe(this) {
-                    when (it) {
-                        is Resource.Success -> {
-                            it.data?.let { stories -> storyAdapter.setData(stories) }
-                            showLoading(false)
-                        }
-                        is Resource.Loading -> showLoading(true)
-                        is Resource.Error -> {
-                            Toast.makeText(this, it.message, Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                }
-                CoroutineScope(Dispatchers.IO).launch {
-                    mainViewModel.getStories()
-                }
+        mainViewModel.getUser().observe(this@MainActivity){ user ->
+            if (user.isLogin){
+                setStory()
             }
             else {
                 startActivity(Intent(this, LoginActivity::class.java))
@@ -101,25 +80,27 @@ class MainActivity : AppCompatActivity() {
 
         with(binding.rvStory) {
             setHasFixedSize(true)
-            adapter = storyAdapter
+            adapter = storyAdapter.withLoadStateFooter(
+                footer = LoadingStateAdapter{
+                    storyAdapter.retry()
+                })
+        }
+    }
+
+    private fun setStory() {
+        mainViewModel.getStory().observe(this@MainActivity) {
+            storyAdapter.submitData(lifecycle, it)
+            showLoading(false)
         }
     }
 
     private fun setupViewModel() {
-        val pref = UserPreferences.getInstance(dataStore)
-        val viewModelFactory = ViewModelFactory(pref)
+        val factory: ViewModelFactory = ViewModelFactory.getInstance(this)
 
-        mainViewModel = ViewModelProvider(this, viewModelFactory)[MainViewModel::class.java]
-        loginViewModel= ViewModelProvider(this, viewModelFactory)[LoginViewModel::class.java]
+        mainViewModel = ViewModelProvider(this, factory)[MainViewModel::class.java]
+        userViewModel= ViewModelProvider(this, factory)[UserViewModel::class.java]
 
     }
 
-    private fun showLoading(isLoad: Boolean) {
-        if (isLoad){
-            binding.progressBar.visibility = View.VISIBLE
-        }
-        else {
-            binding.progressBar.visibility = View.GONE
-        }
-    }
+    private fun showLoading(isLoading: Boolean) = binding.progressBar.isVisible == isLoading
 }

@@ -15,6 +15,11 @@
     <string name="login">Login</string>
     <string name="sign_out">Sign Out</string>
     <string name="sign_up">Sign Up</string>
+
+    <string name="maps">Maps</string>
+    <string name="story_from">Story From: </string>
+    <string name="maps_style">Maps Style</string>
+
     <string name="dt">Created At</string>
     <string name="date">Date</string>
     <string name="storyId">Story ID</string>
@@ -22,10 +27,18 @@
     <string name="camera">Camera</string>
     <string name="gallery">Gallery</string>
     <string name="description">Description</string>
+    <string name="add_description">Add Description Here...</string>
     <string name="upload">Upload</string>
     <string name="add_story">Make new story</string>
     <string name="input_image_first">Add your image first</string>
     <string name="choose_image">Choose an Image</string>
-    <string name="no_permission">Didn\'t get permission</string>
+
+    <string name="no_permission">Didn\'t get camera permission</string>
+    <string name="cant_get_location_permission">Didn\'t get location permission</string>
+    <string name="enable_location">Enable Location</string>
+
+    <string name="location_not_found">Location not found</string>
+
     <string name="setting">Language Setting</string>
+    <string name="title_activity_maps">MapsActivity</string>
 </resources>

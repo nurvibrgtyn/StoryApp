@@ -2,81 +2,75 @@ package com.example.storyapp.ui.user
 
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.preferencesDataStore
+import androidx.core.view.isVisible
 import androidx.lifecycle.ViewModelProvider
 import com.example.storyapp.R
 import com.example.storyapp.databinding.ActivityRegisterBinding
 import com.example.storyapp.data.Resource
-import com.example.storyapp.data.preferences.UserPreferences
 import com.example.storyapp.util.ViewModelFactory
-
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "token")
 
 class RegisterActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityRegisterBinding
-    private lateinit var registerViewModel: RegisterViewModel
+    private lateinit var userViewModel: UserViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityRegisterBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        supportActionBar?.hide()
 
         setupViewModel()
-        setupView()
         setupAction()
         setAnimation()
     }
 
     private fun setupViewModel() {
-        val pref = UserPreferences.getInstance(dataStore)
-        registerViewModel = ViewModelProvider(this, ViewModelFactory(pref))[RegisterViewModel::class.java]
-    }
-
-    private fun setupView() {
-        registerViewModel.userInfo.observe(this) {
-            when (it) {
-                is Resource.Success -> {
-                    showLoading(false)
-                    Toast.makeText(this, it.data, Toast.LENGTH_SHORT).show()
-                    startActivity(Intent(this, LoginActivity::class.java))
-                    finishAffinity()
-                }
-                is Resource.Loading -> showLoading(true)
-                is Resource.Error -> {
-                    Toast.makeText(this, it.message, Toast.LENGTH_SHORT).show()
-                    showLoading(false)
-                }
-            }
-        }
-        supportActionBar?.hide()
+        val factory: ViewModelFactory = ViewModelFactory.getInstance(this)
+        userViewModel = ViewModelProvider(this, factory)[UserViewModel::class.java]
     }
 
     private fun setupAction() {
         binding.tvLogin.setOnClickListener{
-            startActivity(
-                Intent(
-                    this, LoginActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP))
+            startActivity(Intent(this, LoginActivity::class.java))
         }
         binding.btnSignup.setOnClickListener{
             if (valid()) {
                 val name = binding.edRegisterName.text.toString()
                 val email = binding.edRegisterEmail.text.toString()
                 val password = binding.edRegisterPassword.text.toString()
-                registerViewModel.register(name, email, password)
+                userViewModel.userRegister(name, email, password).observe(this) {
+                    when (it) {
+                        is Resource.Success -> {
+                            showLoading(false)
+                            Toast.makeText(this, it.data.message, Toast.LENGTH_SHORT).show()
+                            startActivity(Intent(this, LoginActivity::class.java))
+                            finishAffinity()
+                        }
+                        is Resource.Loading -> showLoading(true)
+                        is Resource.Error -> {
+                            Toast.makeText(this, it.error, Toast.LENGTH_SHORT).show()
+                            showLoading(false)
+                        }
+                    }
+                }
             } else {
-                Toast.makeText(this, resources.getString(R.string.input_invalid), Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    this,
+                    resources.getString(R.string.input_invalid),
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         }
     }
+
+    private fun valid() =
+        binding.edRegisterEmail.error == null && binding.edRegisterPassword.error == null && binding.edRegisterName.error == null && !binding.edRegisterEmail.text.isNullOrEmpty() && !binding.edRegisterPassword.text.isNullOrEmpty() && !binding.edRegisterName.text.isNullOrEmpty()
 
     private fun setAnimation() {
         val appIcon = ObjectAnimator.ofFloat(binding.icon, View.ALPHA, 1f).setDuration(700)
@@ -117,15 +111,5 @@ class RegisterActivity : AppCompatActivity() {
         }
     }
 
-    private fun showLoading(isLoad: Boolean) {
-        if (isLoad){
-            binding.progressBar.visibility = View.VISIBLE
-        }
-        else {
-            binding.progressBar.visibility = View.GONE
-        }
-    }
-
-    private fun valid() =
-        binding.edRegisterEmail.error == null && binding.edRegisterPassword.error == null && binding.edRegisterName.error == null && !binding.edRegisterEmail.text.isNullOrEmpty() && !binding.edRegisterPassword.text.isNullOrEmpty() && !binding.edRegisterName.text.isNullOrEmpty()
+    private fun showLoading(isLoading: Boolean) = binding.progressBar.isVisible == isLoading
 }

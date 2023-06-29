@@ -2,10 +2,12 @@ package com.example.storyapp.util
 
 import android.content.ContentResolver
 import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Environment
+import androidx.core.content.ContextCompat
 import java.io.*
 import java.text.SimpleDateFormat
 import java.util.*
@@ -39,7 +41,6 @@ fun uriToFile(selectedImg: Uri, context: Context): File {
 
 fun reduceFileImage(file: File): File {
     val bitmap = BitmapFactory.decodeFile(file.path)
-
     var compressQuality = 100
     var streamLength: Int
 
@@ -53,5 +54,9 @@ fun reduceFileImage(file: File): File {
 
     bitmap.compress(Bitmap.CompressFormat.JPEG, compressQuality, FileOutputStream(file))
     return file
+}
+
+fun Array<String>.checkPermissionsGranted(context: Context) = this.all {
+    ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
 }
 

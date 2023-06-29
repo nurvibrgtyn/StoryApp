@@ -2,37 +2,32 @@ package com.example.storyapp.ui.user
 
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.preferencesDataStore
+import androidx.core.view.isVisible
 import androidx.lifecycle.ViewModelProvider
 import com.example.storyapp.R
-import com.example.storyapp.databinding.ActivityLoginBinding
 import com.example.storyapp.data.Resource
-import com.example.storyapp.data.preferences.UserPreferences
+import com.example.storyapp.databinding.ActivityLoginBinding
+import com.example.storyapp.data.model.User
 import com.example.storyapp.ui.main.MainActivity
 import com.example.storyapp.util.ViewModelFactory
-
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "token")
 
 class LoginActivity: AppCompatActivity() {
 
     private lateinit var binding : ActivityLoginBinding
-    private lateinit var loginViewModel: LoginViewModel
+    private lateinit var userViewModel: UserViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding= ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        supportActionBar?.hide()
 
         setupViewModel()
-        setupView()
         setupAction()
         setAnimation()
     }
@@ -49,7 +44,28 @@ class LoginActivity: AppCompatActivity() {
             if (valid()) {
                 val email = binding.edLoginEmail.text.toString()
                 val password = binding.edLoginPassword.text.toString()
-                loginViewModel.login(email, password)
+                userViewModel.userLogin(email, password).observe(this) {
+                    when (it) {
+                        is Resource.Success -> {
+                            showLoading(false)
+                            val response = it.data
+                            saveUserData(
+                                User(
+                                    response.loginResult?.name.toString(),
+                                    response.loginResult?.token.toString(),
+                                    true
+                                )
+                            )
+                            startActivity(Intent(this, MainActivity::class.java))
+                            finishAffinity()
+                        }
+                        is Resource.Loading -> showLoading(true)
+                        is Resource.Error -> {
+                            Toast.makeText(this, it.error, Toast.LENGTH_SHORT).show()
+                            showLoading(false)
+                        }
+                    }
+                }
             } else {
                 Toast.makeText(
                     this,
@@ -57,6 +73,10 @@ class LoginActivity: AppCompatActivity() {
                     Toast.LENGTH_SHORT
                 ).show()
             }
+        }
+
+        binding.tvSignup.setOnClickListener{
+            startActivity(Intent(this, RegisterActivity::class.java))
         }
     }
 
@@ -94,37 +114,15 @@ class LoginActivity: AppCompatActivity() {
         }
     }
 
-    private fun setupView() {
-        loginViewModel.userInfo.observe(this) {
-            when (it) {
-                is Resource.Success -> {
-                    showLoading(false)
-                    startActivity(Intent(this, MainActivity::class.java))
-                    finishAffinity()
-                }
-                is Resource.Loading -> showLoading(true)
-                is Resource.Error -> {
-                    Toast.makeText(this, it.message, Toast.LENGTH_SHORT).show()
-                    showLoading(false)
-                }
-            }
-        }
-        supportActionBar?.hide()
+    private fun saveUserData(user: User) {
+        userViewModel.saveUser(user)
     }
-
     private fun setupViewModel() {
-        val pref = UserPreferences.getInstance(dataStore)
-        loginViewModel = ViewModelProvider(this, ViewModelFactory(pref))[LoginViewModel::class.java]
+        val factory: ViewModelFactory = ViewModelFactory.getInstance(this)
+        userViewModel = ViewModelProvider(this, factory)[UserViewModel::class.java]
     }
 
-    private fun showLoading(isLoad: Boolean) {
-        if (isLoad){
-            binding.progressBar.visibility = View.VISIBLE
-        }
-        else {
-            binding.progressBar.visibility = View.GONE
-        }
-    }
+    private fun showLoading(isLoading: Boolean) = binding.progressBar.isVisible == isLoading
 
     private fun valid() =
         binding.edLoginEmail.error == null && binding.edLoginPassword.error == null && !binding.edLoginEmail.text.isNullOrEmpty() && !binding.edLoginPassword.text.isNullOrEmpty()

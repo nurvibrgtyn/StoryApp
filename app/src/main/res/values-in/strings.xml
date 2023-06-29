@@ -14,6 +14,11 @@
     <string name="login">Masuk</string>
     <string name="sign_out">Keluar</string>
     <string name="sign_up">Daftar</string>
+
+    <string name="maps">Peta</string>
+    <string name="story_from">Stori Dari: </string>
+    <string name="maps_style">Tampilan Peta</string>
+
     <string name="name_required">Nama Wajib Diisi</string>
     <string name="input_invalid">Input Tidak Valid</string>
     <string name="dt">Tanggal Dibuat</string>
@@ -23,10 +28,17 @@
     <string name="camera">Kamera</string>
     <string name="gallery">Galeri</string>
     <string name="description">Deskripsi</string>
+    <string name="add_description">Tambah Deskripsi di sini...</string>
     <string name="upload">Unggah</string>
     <string name="add_story">Buat story baru</string>
     <string name="input_image_first">Masukkan gambar terlebih dahulu</string>
     <string name="choose_image">Pilih Gambar</string>
-    <string name="no_permission">Tidak medapatkan izin</string>
+
+    <string name="no_permission">Tidak mendapatkan izin kamera</string>
+    <string name="cant_get_location_permission">Tidak mendapatkan izin lokasi</string>
+    <string name="enable_location">Nyalakan Lokasi</string>
+    <string name="location_not_found">Lokasi tidak ditemukan</string>
+
     <string name="setting">Pengaturan Bahasa</string>
+    <string name="title_activity_maps">MapsActivity</string>
 </resources>
